@@ -3,17 +3,20 @@
 #include<algorithm>
 
 #define PI 3.14159265358979323846
+#define INFINITY_DOUBLE 1e20
 double normalized_angle(double angle);
 
 double normalized_rad(double rad);
+
+double atanh(double x);
 
 //三维向量
 class _declspec(dllexport) Vector3
 {
 private:
-	double m_x = 0.0;
-	double m_y = 0.0;
-	double m_z = 0.0;
+	double m_x;
+	double m_y;
+	double m_z;
 
 public:
 	Vector3();
@@ -47,7 +50,7 @@ public:
 	Vector3 static Cross(const Vector3&a, const Vector3&b);
 
 	//向量夹角（弧度）
-	double static Angle(const Vector3&a, const Vector3&b);
+	static double Angle(const Vector3&a, const Vector3&b);
 };
 
 class _declspec(dllexport)Quaternion

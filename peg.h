@@ -1,43 +1,48 @@
 #pragma once
 #include "kmath.h"
+#include<algorithm>
 #include<vector>
 const double g0 = 9.8067;
-const double pi = 3.141592654;
+const double pi = 3.1415926535897932;
 struct target
 {
-	double angle = 0.0;
-	Vector3 normal = Vector3(0.0, 0.0, 0.0);
-	double radius = 0.0;
-	double velocity = 0.0;
+	double angle;
+	Vector3 normal;
+	double radius;
+	double velocity;
+	target(){memset(this,0,sizeof(*this));}
 };
 
 struct state
 {
-	double time = 0.0;
-	double mass = 0.0;
-	Vector3 radius = Vector3(0.0, 0.0, 0.0);
-	Vector3 velocity = Vector3(0.0, 0.0, 0.0);
+	double time;
+	double mass;
+	Vector3 radius;
+	Vector3 velocity;
+	state(){memset(this,0,sizeof(*this));}
 };
 
 struct  previous
 {
-	Vector3 rbias = Vector3(0.0, 0.0, 0.0);
-	Vector3 rd = Vector3(0.0, 0.0, 0.0);
-	Vector3 rgrav = Vector3(0.0, 0.0, 0.0);
-	double	time = 0.0;
-	Vector3 v = Vector3(0.0, 0.0, 0.0);
-	Vector3 vgo = Vector3(0.0, 0.0, 0.0);
-	double	tgo = 0.0;
+	Vector3 rbias;
+	Vector3 rd;
+	Vector3 rgrav;
+	double	time;
+	Vector3 v;
+	Vector3 vgo;
+	double	tgo;
+	previous(){memset(this,0,sizeof(*this));}
 };
 
 struct stage 
 {
-	double massWet = 0.0;
-	double massDry = 0.0;
-	double gLim = 10.0;
-	double isp = 0.0;
-	double thrust = 0.0;
-	double mode = 0;
+	double massWet;
+	double massDry;
+	double gLim;
+	double isp;
+	double thrust;
+	int mode;
+	stage(){memset(this,0,sizeof(*this));}
 };
 class pegas
 {
@@ -47,19 +52,23 @@ private:
 	//m_earth = conn.space_center.bodies['Earth'];
 	double m_u;// m_vessel.orbit.body.gravitational_parameter;
 	//m_reference_frame = m_vessel.orbit.body.non_rotating_reference_frame;
-	std::vector<stage>m_stages;;
-	target m_target = target();
-	state m_state = state();
-	previous m_previous = previous();
-	double m_tgo = 0.0;
-	double m_last_stage_mass = 0.0;
-	double m_gLim = 4.5;
+	std::vector<stage>m_stages;
+	target m_target;
+	state m_state;
+	previous m_previous;
+	double m_tgo ;
+	double m_last_stage_mass ;
+	double m_gLim;
 	double m_output[2];// = (m_vessel.flight().pitch, m_vessel.flight().heading);
 
-private:
+public:
+	pegas()
+	{
+		m_last_stage_mass=0;
+		m_gLim=0;
+	}
 	void _upfg(int n)
 	{
-
 		auto stages = m_stages;
 		auto gamma = m_target.angle;
 		auto iy = m_target.normal;
@@ -161,7 +170,7 @@ private:
 		}
 		double tgo = tgoi[n - 1];
 
-		double L = 0.0;
+		L = 0.0;
 		double J = 0.0;
 		double S = 0.0;
 		double Q = 0.0;
@@ -216,19 +225,19 @@ private:
 			rgrav = pow((tgo / m_previous.tgo), 2) * rgrav;
 		}
 
-		auto rgo = rd - (r + v*tgo + rgrav);
+		Vector3 rgo = rd - (r + v*tgo + rgrav);
 		auto iz = Vector3::Cross(rd, iy).normalized();
 		auto rgoxy = rgo - Vector3::Dot(iz, rgo)*iz;
 		auto rgoz = (S - Vector3::Dot(_lambda, rgoxy)) / Vector3::Dot(_lambda, iz);
 		rgo = rgoxy + rgoz*iz + rbias;
 		auto lambdade = Q - S*J / L;
 		auto lambdadot = (rgo - S*_lambda) / lambdade;
-		auto iF_ = _lambda - lambdadot*J / L;
+		Vector3 iF_ = _lambda - lambdadot*J / L;
 		iF_ = iF_.normalized();
-		auto phi = Vector3::Angle(iF_, _lambda);
+		double phi = Vector3::Angle(iF_, _lambda);
 		auto phidot = -phi*L / J;
-		auto vthrust = (L - 0.5*L*phi**2 - J*phi*phidot - 0.5*H*phidot**2)*_lambda;
-		auto rthrust = (S - 0.5*S*phi**2 - Q*phi*phidot - 0.5*P*phidot**2)*_lambda;
+		auto vthrust = (L - 0.5*L*phi*phi - J*phi*phidot - 0.5*H*phidot*phidot)*_lambda;
+		auto rthrust = (S - 0.5*S*phi*phi - Q*phi*phidot - 0.5*P*phidot*phidot)*_lambda;
 		rthrust = rthrust - (S*phi + Q*phidot)*lambdadot.normalized();
 		auto vbias = vgo - vthrust;
 		rbias = rgo - rthrust;
@@ -239,9 +248,9 @@ private:
 		//	TODO angle rates;
 		auto _up = r.normalized();
 		auto _east = Vector3::Cross(_up, Vector3(0, 1, 0)).normalized();
-		auto pitch = pi / 2 - Vector3::Angle(iF_, _up);
-		auto inplane = iF_ - Vector3::Dot(_up, iF_)*_up;
-		auto yaw = Vector3::Angle(inplane, _east);
+		double pitch = pi / 2 - Vector3::Angle(iF_, _up);
+		Vector3 inplane = iF_ - Vector3::Dot(_up, iF_)*_up;
+		double yaw = Vector3::Angle(inplane, _east);
 		auto tangent = Vector3::Cross(_up, _east);
 		if (Vector3::Dot(inplane, tangent) < 0)
 		{
@@ -263,12 +272,12 @@ private:
 		*/
 		auto w2 = m_u / (pow(rdval, 3));
 		auto vd = v + vgo;
-		auto rgrav = -w2*pow(tgo, 2) * ((3 * rd + 7 * r)*0.05 - (2 * vd - 3 * v) / 30);
+		rgrav = -w2*pow(tgo, 2) * ((3 * rd + 7 * r)*0.05 - (2 * vd - 3 * v) / 30);
 		auto vgrav = -w2*tgo*((rd + r)*0.5 - (vd - v)*tgo / 12);
 
 
 		//	8
-		auto rp = r + v*tgo + rgrav + rthrust;
+		Vector3 rp = r + v*tgo + rgrav + rthrust;
 		rp = rp - Vector3::Dot(rp, iy)*iy;
 		rd = rdval*rp.normalized();
 		auto ix = rd.normalized();
@@ -289,29 +298,31 @@ private:
 		m_previous.vgo = vgo;
 		m_previous.tgo = tgo;;
 	}
-	void set_target(double inc, double lan, double radius, double velocity, double angle = 0.0)
+	void set_target_orbit(double inc, double lan, double radius, double velocity, double angle = 0.0)
 	{
 		m_target.angle = angle;
 		m_target.normal; //= target_normal_vector(m_conn, m_earth, inc, lan, m_reference_frame)
 		m_target.radius = radius;
 		m_target.velocity = velocity;
-
-		r = Vector3::Tuple3(m_vessel.position(m_reference_frame));
-		v = Vector3::Tuple3(m_vessel.velocity(m_reference_frame));
-		q = Quaternion.PivotRad(m_target.normal, radians(1));
-		rd = q.rotate(r);
-		vd = Vector3::Cross(rd, m_target.normal).normalized()*velocity;
-		m_previous.rd = rd;
-		m_previous.time = m_conn.space_center.ut
-		m_previous.v = v
-		m_previous.vgo = vd - v
-
-		m_state.time = m_conn.space_center.ut
-		m_state.mass = m_vessel.mass
-		m_state.radius = Vector3::Tuple3(m_vessel.position(m_reference_frame))
-		m_state.velocity = Vector3::Tuple3(m_vessel.velocity(m_reference_frame))
-
 	}
+
+	void init_peg(Vector3 r,Vector3 v,double mass,double t,double gm)
+	{
+		m_u=gm;
+		auto q = Quaternion(m_target.normal, 2*PI/30);
+		Vector3 rd = q.rotate(r);
+		Vector3 vd = Vector3::Cross(rd, m_target.normal).normalized()*v.magnitude();
+		m_previous.rd = rd;
+		m_previous.time = t;
+		m_previous.v = v;
+		m_previous.vgo = vd - v;
+
+		m_state.time = t;
+		m_state.mass = mass;
+		m_state.radius = r;
+		m_state.velocity = v;
+	}
+
 	void _add_stage(double massWet, double massDry, double thrust, double isp, double gLim, double mode)
 	{
 		auto _stage = stage();
@@ -326,98 +337,105 @@ private:
 	void add_stage(double massWet, double massDry, double thrust, double isp, double gLim = 4.5)
 	{
 		auto _stage = stage();
-		m_stages.reverse();
-		last_stage_mass = m_last_stage_mass
 
-			if thrust == 0 or isp == 0 or massWet == massDry
-				m_last_stage_mass = last_stage_mass + massWet
-				return None
+		double last_stage_mass = m_last_stage_mass;
 
-				mass_tmp = thrust / (gLim*g0)
-				if mass_tmp <= massDry + last_stage_mass
-					m_add_stage(massWet + last_stage_mass, massDry + last_stage_mass, thrust, isp, gLim, 0)
-					elif mass_tmp >= massWet + last_stage_mass
-					m_add_stage(massWet + last_stage_mass, massDry + last_stage_mass, thrust, isp, gLim, 1)
-				else
-					m_add_stage(mass_tmp, massDry + last_stage_mass, thrust, isp, gLim, 1)
-					m_add_stage(massWet + last_stage_mass, mass_tmp, thrust, isp, gLim, 0)
-					m_last_stage_mass = last_stage_mass + massWet
-					m_stages.reverse()
+		if (thrust == 0 || isp == 0 || massWet == massDry)
+		{
+			m_last_stage_mass = last_stage_mass + massWet;
+			return ;
+		}
+
+		double mass_tmp = thrust / (gLim*g0);
+		if( mass_tmp <= massDry + last_stage_mass)
+		{
+			_add_stage(massWet + last_stage_mass, massDry + last_stage_mass, thrust, isp, gLim, 0);
+		}
+		else if(mass_tmp>= massWet + last_stage_mass)
+		{
+			_add_stage(massWet + last_stage_mass, massDry + last_stage_mass, thrust, isp, gLim, 1);
+		}
+		else
+		{
+			_add_stage(mass_tmp, massDry + last_stage_mass, thrust, isp, gLim, 1);
+			_add_stage(massWet + last_stage_mass, mass_tmp, thrust, isp, gLim, 0);
+			m_last_stage_mass = last_stage_mass + massWet;
+		}
 	}
 	void  update(double ut, double mass, Vector3 r, Vector3 v)
 	{
-		m_state.time = m_conn.space_center.ut
-			m_state.mass = m_vessel.mass
-			m_state.radius = Vector3::Tuple3(m_vessel.position(m_reference_frame))
-			m_state.velocity = Vector3::Tuple3(m_vessel.velocity(m_reference_frame))
+		m_state.time = ut;
+		m_state.mass = mass;
+		m_state.radius = r;
+		m_state.velocity =v;
 
-			vessel = m_vessel
-			n = len(m_stages)
-			m_stages[0].massWet = m_state.mass
-			if m_state.mass <= m_stages[0].massDry
-				m_stages.pop(0)
-				vessel.control.throttle = 1.0
-				#m_throttle_bias.clear()
-				return None
 
-				'''
-				if m_stages[0].mode != 0
-					acc = vessel.thrust / max(vessel.mass, 0.1)
-					dacc = acc - g0*m_stages[0].gLim
-					dacc = max(-1, min(1, dacc))
-					vessel.control.throttle = 1.0 - m_throttle_bias.integral(0.05*dacc)
-					'''
-
-					last_tgo = m_previous.tgo
-					_upfg(n)
-					return m_output
-	}
-
-	void update_stages(double thrustK = 1.0)
-	{
-		m_last_stage_mass = 0.0
-		m_stages = []
-		stages = get_stages(m_vessel.parts.root)
-		for i in stages
-			self.add_stage(i[0], i[1], i[2] * thrustK, i[3], m_gLim)
-
-			def time_to_go(self)
-			return m_previous.tgo
-
-			def __time_to_stage(self, stage)
-			if stage.mode == 0
-				dm = stage.thrust / (stage.isp*g0)
-				return (stage.massWet - stage.massDry) / dm
-			else
-				dv = stage.isp*log(stage.massWet / stage.massDry)
-				return dv / stage.gLim
-
-				def time_to_stage(self)
-				stage = m_stages[0]
-				ret = m_time_to_stage(stage)
-				if len(m_stages) > 1
-	}
-if m_stages[1].massWet == stage.massDry 
-	ret = ret + m_time_to_stage(m_stages[1])
-	return ret
-
-	def stages_num(self) 
-	return len(m_stages)
-
-	def angle_to_rd(self) 
-	return Vector3::Angle(m_previous.rd, m_state.radius)
-
-	def rd_position(self) 
-	pos = m_previous.rd.tuple3()
-	ref = m_reference_frame
-	body = m_vessel.orbit.body
-	turn_angle = degrees(body.rotational_speed*m_previous.tgo)
-	return (body.longitude_at_position(pos, ref) - turn_angle, body.latitude_at_position(pos, ref))
-
-	def set_max_g(self, g) 
-	m_gLim = g
-
-	def vehicle_info(self) 
-	for i in m_stages 
-		print('wet mass%f dry mass%f thurst%f isp%f' % (i.massWet, i.massDry, i.thrust, i.isp))
+		int n = m_stages.size();
+		m_stages.back().massWet = m_state.mass;
+		if (m_state.mass <= m_stages.back().massDry)
+		{
+			m_stages.pop_back();
+			//vessel.control.throttle = 1.0
+			//#m_throttle_bias.clear()
+			return;
 		}
+
+
+		if (m_stages.back().mode != 0)
+		{
+			//double acc = vessel.thrust / max(vessel.mass, 0.1)
+			//double dacc = acc - g0*m_stages[0].gLim
+			//double dacc = max(-1, min(1, dacc))
+			//double vessel.control.throttle = 1.0 - m_throttle_bias.integral(0.05*dacc)
+		}
+
+		_upfg(n);
+		return;
+	}
+
+
+	double time_to_go()
+	{
+		return m_previous.tgo;
+	}
+
+	double __time_to_stage(stage _stage)
+	{
+		if (_stage.mode == 0)
+		{
+			double dm = _stage.thrust / (_stage.isp*g0);
+			return (_stage.massWet - _stage.massDry) / dm;
+		}
+		else
+		{
+			double dv = _stage.isp*log(_stage.massWet / _stage.massDry);
+			return dv / _stage.gLim;
+		}
+	}
+
+	double stages_num() 
+	{
+		return m_stages.size();
+	}
+
+	double angle_to_rd() 
+	{
+		return Vector3::Angle(m_previous.rd, m_state.radius);
+	}
+
+	//Vector3 rd_position() 
+	//{
+
+	//}
+	void set_max_g(double g) 
+	{
+		m_gLim = g;
+	}
+
+	void vehicle_info() 
+	{
+		//for() 
+		//	printf('wet mass%f dry mass%f thurst%f isp%f' ,i.massWet, i.massDry, i.thrust, i.isp);
+		//	}
+	}
+};

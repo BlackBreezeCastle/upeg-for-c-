@@ -1,4 +1,11 @@
 #include "kmath.h"
+
+double atanh(double x)
+{
+	return 0.5*log((1.0+x)/(1.0-x));
+}
+
+
 double normalized_angle(double angle)
 {
 	angle = angle + 180;
