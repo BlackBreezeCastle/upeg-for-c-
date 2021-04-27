@@ -47,16 +47,11 @@ struct stage
 class pegas
 {
 private:
-	//double m_conn = conn;
-	//m_vessel = conn.space_center.active_vessel;
-	//m_earth = conn.space_center.bodies['Earth'];
 	double m_u;// m_vessel.orbit.body.gravitational_parameter;
-	//m_reference_frame = m_vessel.orbit.body.non_rotating_reference_frame;
 	std::vector<stage>m_stages;
 	target m_target;
 	state m_state;
 	previous m_previous;
-	double m_tgo ;
 	double m_last_stage_mass ;
 	double m_gLim;
 	double m_output[2];// = (m_vessel.flight().pitch, m_vessel.flight().heading);
@@ -301,7 +296,7 @@ public:
 	void set_target_orbit(double inc, double lan, double radius, double velocity, double angle = 0.0)
 	{
 		m_target.angle = angle;
-		m_target.normal; //= target_normal_vector(m_conn, m_earth, inc, lan, m_reference_frame)
+		m_target.normal= target_normal_vector(inc, lan);
 		m_target.radius = radius;
 		m_target.velocity = velocity;
 	}
@@ -309,7 +304,7 @@ public:
 	void init_peg(Vector3 r,Vector3 v,double mass,double t,double gm)
 	{
 		m_u=gm;
-		auto q = Quaternion(m_target.normal, 2*PI/30);
+		auto q = Quaternion(m_target.normal, -2*PI/30);
 		Vector3 rd = q.rotate(r);
 		Vector3 vd = Vector3::Cross(rd, m_target.normal).normalized()*v.magnitude();
 		m_previous.rd = rd;
@@ -437,5 +432,26 @@ public:
 		//for() 
 		//	printf('wet mass%f dry mass%f thurst%f isp%f' ,i.massWet, i.massDry, i.thrust, i.isp);
 		//	}
+	}
+
+public:
+
+	static Vector3 target_normal_vector(double inc,double lan)
+	{
+		Vector3 res;
+		Vector3 north_pole=Vector3(0,1,0);
+		Vector3 vernal_vector=Vector3(1,0,0);
+		Quaternion q=Quaternion(north_pole,-lan);
+		Vector3 ascend_node=q.rotate(vernal_vector);
+		Vector3 tmp=Vector3::Cross(north_pole,ascend_node).normalized();
+		if(abs(inc-PI/2)<1e-16)
+		{
+			res=tmp;
+		}
+		else
+		{
+			res= north_pole+(tmp*tan(inc));
+		}
+		return res.normalized();
 	}
 };
