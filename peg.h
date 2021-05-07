@@ -2,50 +2,54 @@
 #include "kmath.h"
 #include<algorithm>
 #include<vector>
+#include<float.h>
+#include"orbit.h"
 const double g0 = 9.8067;
 const double pi = 3.1415926535897932;
-struct target
-{
-	double angle;
-	Vector3 normal;
-	double radius;
-	double velocity;
-	target(){memset(this,0,sizeof(*this));}
-};
 
-struct state
-{
-	double time;
-	double mass;
-	Vector3 radius;
-	Vector3 velocity;
-	state(){memset(this,0,sizeof(*this));}
-};
 
-struct  previous
-{
-	Vector3 rbias;
-	Vector3 rd;
-	Vector3 rgrav;
-	double	time;
-	Vector3 v;
-	Vector3 vgo;
-	double	tgo;
-	previous(){memset(this,0,sizeof(*this));}
-};
 
-struct stage 
-{
-	double massWet;
-	double massDry;
-	double gLim;
-	double isp;
-	double thrust;
-	int mode;
-	stage(){memset(this,0,sizeof(*this));}
-};
 class pegas
 {
+	struct target
+	{
+		double angle;
+		Vector3 normal;
+		double radius;
+		double velocity;
+		target(){memset(this,0,sizeof(*this));}
+	};
+	struct state
+	{
+		double time;
+		double mass;
+		Vector3 radius;
+		Vector3 velocity;
+		state(){memset(this,0,sizeof(*this));}
+	};
+
+	struct  previous
+	{
+		Vector3 rbias;
+		Vector3 rd;
+		Vector3 rgrav;
+		double	time;
+		Vector3 v;
+		Vector3 vgo;
+		double	tgo;
+		previous(){memset(this,0,sizeof(*this));}
+	};
+
+	struct stage 
+	{
+		double massWet;
+		double massDry;
+		double gLim;
+		double isp;
+		double thrust;
+		int mode;
+		stage(){memset(this,0,sizeof(*this));}
+	};
 private:
 	double m_u;// m_vessel.orbit.body.gravitational_parameter;
 	std::vector<stage>m_stages;
@@ -62,6 +66,7 @@ public:
 		m_last_stage_mass=0;
 		m_gLim=0;
 	}
+
 	void _upfg(int n)
 	{
 		auto stages = m_stages;
@@ -165,6 +170,7 @@ public:
 		}
 		double tgo = tgoi[n - 1];
 
+
 		L = 0.0;
 		double J = 0.0;
 		double S = 0.0;
@@ -256,19 +262,21 @@ public:
 		m_output[0] = pitch;
 		m_output[1] = yaw;
 		//7
-		/*
+
 		auto rc1 = r - 0.1*rthrust - (tgo / 30)*vthrust;
 		auto vc1 = v + 1.2*rthrust / tgo - 0.1*vthrust;
-		auto pack = kepler.state_at(rc1.tuple3(), vc1.tuple3(), m_u, 0, tgo);
-		rgrav = Vector3::Tuple3(pack[0]) - rc1 - vc1*tgo;
-		vgrav = Vector3::Tuple3(pack[1]) - vc1;
-		#print('p', (pack[0].magnitude(), pack[1].magnitude()))
+		orbit ob=orbit(rc1,vc1,0,m_u);
+		auto pack = ob.state_at_t(tgo);
+		rgrav = pack.r - rc1 - vc1*tgo;
+		Vector3 vgrav = pack.v - vc1;
 
-		*/
+
+		/*
 		auto w2 = m_u / (pow(rdval, 3));
 		auto vd = v + vgo;
 		rgrav = -w2*pow(tgo, 2) * ((3 * rd + 7 * r)*0.05 - (2 * vd - 3 * v) / 30);
 		auto vgrav = -w2*tgo*((rd + r)*0.5 - (vd - v)*tgo / 12);
+		*/
 
 
 		//	8
@@ -277,8 +285,8 @@ public:
 		rd = rdval*rp.normalized();
 		auto ix = rd.normalized();
 		iz = Vector3::Cross(ix, iy);
-#	
-		vd = (iz*cos(gamma) + ix*sin(gamma))*vdval;
+	
+		auto vd = (iz*cos(gamma) + ix*sin(gamma))*vdval;
 		vgo = vd - v - vgrav + vbias;
 
 		//print(vbias);
@@ -291,7 +299,7 @@ public:
 		m_previous.time = m_state.time;
 		m_previous.v = m_state.velocity;
 		m_previous.vgo = vgo;
-		m_previous.tgo = tgo;;
+		m_previous.tgo = tgo;
 	}
 	void set_target_orbit(double inc, double lan, double radius, double velocity, double angle = 0.0)
 	{
@@ -306,7 +314,7 @@ public:
 		m_u=gm;
 		auto q = Quaternion(m_target.normal, -2*PI/30);
 		Vector3 rd = q.rotate(r);
-		Vector3 vd = Vector3::Cross(rd, m_target.normal).normalized()*v.magnitude();
+		Vector3 vd = Vector3::Cross(rd, m_target.normal).normalized()*m_target.velocity;
 		m_previous.rd = rd;
 		m_previous.time = t;
 		m_previous.v = v;

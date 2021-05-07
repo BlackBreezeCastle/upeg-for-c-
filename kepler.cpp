@@ -11,6 +11,9 @@
 ** ---------------------------------------------------------------------*/
 #define D2PI (3.14159265358979323846)
 #define error 1.0e-14
+#ifndef PY_BUILD
+double atanh(double x){return 0.5*log((1.0+x)/(1.0-x));}
+#endif
 
 double KeplerStart3(double ecc, double M) {
 

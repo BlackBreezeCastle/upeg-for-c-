@@ -1,6 +1,9 @@
 #pragma once
+#ifndef PY_BUILD
 #include "kmath.h"
-//#include "kmath.cpp"
+#else
+#include "kmath.cpp"
+#endif
 #include<stdio.h>
 /* ---------------------------------------------------------------------
 ** º¯ÊýÃû³Æ: E_to_F
