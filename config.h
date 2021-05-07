@@ -1,6 +1,9 @@
 #pragma once
-#include"json.h"
-//#include"json.cpp"
+#ifndef PY_BUILD
+#include "json.h"
+#else
+#include"json.cpp"
+#endif
 class Config
 {
 private:
